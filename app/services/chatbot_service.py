@@ -1,84 +1,110 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
-from openai import OpenAI, APIError, AuthenticationError, RateLimitError
+from openai import (
+    APIConnectionError,
+    APIError,
+    AuthenticationError,
+    OpenAI,
+    RateLimitError,
+)
 
 
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parents[2]
+load_dotenv(BASE_DIR / ".env", override=True)
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.6-luna")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/free")
 
 
 SYSTEM_INSTRUCTIONS = """
-You are Hoku AI, a friendly and professional healthcare assistant.
+You are Hoku AI, a friendly and professional healthcare information assistant.
 
-Your responsibilities:
-- Answer general health and wellness questions.
-- Explain symptoms in simple language.
-- Suggest the appropriate type of doctor when useful.
-- Give safe, general self-care guidance.
-- Remind users that you cannot provide a confirmed diagnosis.
-- Encourage emergency help for dangerous symptoms.
-
-Safety rules:
-- Never claim to diagnose a disease.
-- Never guarantee that a medicine or treatment will cure the user.
-- Do not prescribe prescription medication.
-- Do not tell users to stop prescribed medicine.
-- For chest pain, breathing difficulty, unconsciousness, severe bleeding,
-  stroke symptoms, suicidal thoughts, or another emergency, advise the user
-  to contact local emergency services immediately.
-- Keep responses clear, empathetic, and concise.
-- Always recommend consulting a qualified healthcare professional for
-  proper diagnosis and treatment.
+Rules:
+- Provide only general health and wellness information.
+- Use simple and clear language.
+- Do not diagnose diseases.
+- Do not prescribe medicines.
+- Do not tell users to stop prescribed medicines.
+- Encourage consultation with a qualified healthcare professional.
+- For severe symptoms such as chest pain, breathing difficulty,
+  unconsciousness, stroke symptoms, severe bleeding, or suicidal thoughts,
+  advise the user to contact local emergency services immediately.
+- Keep the response concise, safe, and empathetic.
 """
 
 
 class ChatbotConfigurationError(Exception):
-    """Raised when chatbot configuration is missing."""
+    """Raised when chatbot environment configuration is missing."""
 
 
 class ChatbotServiceError(Exception):
-    """Raised when the AI provider request fails."""
+    """Raised when the external AI service cannot return a response."""
 
 
 def generate_chatbot_reply(message: str) -> str:
-    if not OPENAI_API_KEY:
+    cleaned_message = message.strip()
+
+    if not cleaned_message:
+        raise ChatbotServiceError("Message cannot be empty.")
+
+    if not OPENROUTER_API_KEY:
         raise ChatbotConfigurationError(
-            "OPENAI_API_KEY is missing from the .env file."
+            "OPENROUTER_API_KEY is missing from the .env file."
         )
 
-    client = OpenAI(api_key=OPENAI_API_KEY)
+    client = OpenAI(
+        api_key=OPENROUTER_API_KEY,
+        base_url="https://openrouter.ai/api/v1",
+        default_headers={
+            "HTTP-Referer": "http://127.0.0.1:8000",
+            "X-OpenRouter-Title": "Hoku Health Care API",
+        },
+    )
 
     try:
-        response = client.responses.create(
-            model=OPENAI_MODEL,
-            instructions=SYSTEM_INSTRUCTIONS,
-            input=message,
-            max_output_tokens=500
+        response = client.chat.completions.create(
+            model=OPENROUTER_MODEL,
+            messages=[
+                {
+                    "role": "system",
+                    "content": SYSTEM_INSTRUCTIONS,
+                },
+                {
+                    "role": "user",
+                    "content": cleaned_message,
+                },
+            ],
+            temperature=0.3,
+            max_tokens=500,
         )
 
-        reply = response.output_text
+        reply = response.choices[0].message.content
 
         if not reply:
             raise ChatbotServiceError(
-                "The AI service returned an empty response."
+                "OpenRouter returned an empty response."
             )
 
         return reply.strip()
 
     except AuthenticationError as exc:
         raise ChatbotConfigurationError(
-            "OpenAI API key is invalid or inactive."
+            "OpenRouter API key is invalid or inactive."
         ) from exc
 
     except RateLimitError as exc:
         raise ChatbotServiceError(
-            "AI request limit reached. Please try again later."
+            "OpenRouter free-model limit reached. Please try again later."
+        ) from exc
+
+    except APIConnectionError as exc:
+        raise ChatbotServiceError(
+            "Could not connect to OpenRouter. Check your internet connection."
         ) from exc
 
     except APIError as exc:
         raise ChatbotServiceError(
-            "The AI service is temporarily unavailable."
+            f"OpenRouter API request failed: {exc}"
         ) from exc
