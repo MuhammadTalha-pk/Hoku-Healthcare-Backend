@@ -6,6 +6,14 @@ from app.routers import (
     reviews,
     services,
 )
+from app.routers import (
+    admin,
+    chatbot,
+    doctor_recommender,
+    health_tips,
+    reviews,
+    services,
+)
 from app.database import Base, engine
 
 from app.routers import services, reviews,admin,chatbot
@@ -22,6 +30,7 @@ app.include_router(reviews.router)
 app.include_router(admin.router)
 app.include_router(chatbot.router)
 app.include_router(doctor_recommender.router)
+app.include_router(health_tips.router)
 @app.get("/")
 def home():
     return {"message": "Hoku Health Care API is running"}
