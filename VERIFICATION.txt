@@ -1,0 +1,11 @@
+HOKU integrated backend verification
+
+- Pytest: 15 passed
+- Python compileall: passed
+- Alembic upgrade head: passed
+- Database tables: 12 project tables plus alembic_version
+- OpenAPI generation: passed
+- OpenAPI paths: 44
+- Talha and Faisal API modules visible in one FastAPI application
+
+External OpenRouter, SMTP, Twilio and Render delivery require user-owned credentials.

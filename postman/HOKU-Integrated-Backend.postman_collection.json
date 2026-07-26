@@ -1,0 +1,330 @@
+{
+  "info": {
+    "name": "HOKU Health Care - Talha and Faisal Integrated Backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000/api/v1"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "internalApiKey",
+      "value": "development-internal-key-change-me"
+    },
+    {
+      "key": "doctorId",
+      "value": "1"
+    },
+    {
+      "key": "serviceId",
+      "value": "1"
+    },
+    {
+      "key": "appointmentId",
+      "value": "1"
+    },
+    {
+      "key": "reminderId",
+      "value": "1"
+    },
+    {
+      "key": "reviewId",
+      "value": "1"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "openRouterKey",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health"
+      }
+    },
+    {
+      "name": "Register Patient",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"full_name\": \"Muhammad Talha Test Patient\",\n  \"email\": \"patient@example.com\",\n  \"phone\": \"+923001234567\",\n  \"password\": \"StrongPass123!\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/register/patient"
+      }
+    },
+    {
+      "name": "Login Patient",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const j = pm.response.json();",
+              "pm.collectionVariables.set('accessToken', j.access_token);",
+              "pm.collectionVariables.set('refreshToken', j.refresh_token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"patient@example.com\",\n  \"password\": \"StrongPass123!\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      }
+    },
+    {
+      "name": "My Profile",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/users/me"
+      }
+    },
+    {
+      "name": "List Doctors",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/doctors"
+      }
+    },
+    {
+      "name": "Book Appointment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"doctor_id\": 1,\n  \"service_id\": 1,\n  \"appointment_date\": \"2027-01-15\",\n  \"appointment_time\": \"10:00:00\",\n  \"notes\": \"Routine visit\"\n}"
+        },
+        "url": "{{baseUrl}}/appointments"
+      }
+    },
+    {
+      "name": "Create Reminder",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.collectionVariables.set('reminderId', pm.response.json().id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"medicine_name\": \"Paracetamol\",\n  \"dosage\": \"500 mg\",\n  \"reminder_time\": \"08:00:00\",\n  \"frequency\": \"daily\",\n  \"timezone\": \"Asia/Karachi\"\n}"
+        },
+        "url": "{{baseUrl}}/reminders"
+      }
+    },
+    {
+      "name": "Send Reminder Internally",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Internal-API-Key",
+            "value": "{{internalApiKey}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reminder_id\": {{reminderId}}\n}"
+        },
+        "url": "{{baseUrl}}/ai/reminder/send"
+      }
+    },
+    {
+      "name": "List Services (Public)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/services/"
+      }
+    },
+    {
+      "name": "Create Service (Admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Palliative Care\",\n  \"description\": \"Comfort care at home\",\n  \"price\": 3500\n}"
+        },
+        "url": "{{baseUrl}}/services/"
+      }
+    },
+    {
+      "name": "Create Review (Patient)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.collectionVariables.set('reviewId', pm.response.json().id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"doctor_id\": {{doctorId}},\n  \"rating\": 5,\n  \"comment\": \"Very caring service\"\n}"
+        },
+        "url": "{{baseUrl}}/reviews/"
+      }
+    },
+    {
+      "name": "Approve Review (Admin)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"is_approved\": true\n}"
+        },
+        "url": "{{baseUrl}}/reviews/{{reviewId}}/approval"
+      }
+    },
+    {
+      "name": "Admin Dashboard",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/admin/dashboard"
+      }
+    },
+    {
+      "name": "AI Doctor Recommender",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"symptoms\": [\"chest pain\", \"shortness of breath\"],\n  \"duration_days\": 1\n}"
+        },
+        "url": "{{baseUrl}}/ai/recommend-doctor"
+      }
+    },
+    {
+      "name": "AI Chatbot",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"message\": \"I have a mild headache. What should I do?\"\n}"
+        },
+        "url": "{{baseUrl}}/ai/chat"
+      }
+    },
+    {
+      "name": "Health Tip Categories",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/ai/health-tip-categories"
+      }
+    }
+  ]
+}
